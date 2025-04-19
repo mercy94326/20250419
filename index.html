@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Permissions-Policy" content="accelerometer=*, gyroscope=*, magnetometer=*">
+
+    <title>Sketch</title>
+
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+    <script src="libraries/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.play/1.3.0/p5.play.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      #bubbleCanvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+      }
+
+      #embeddedFrame {
+        display: none;
+        position: absolute;
+        width: 1000px;
+        height: 700px;
+        border: 10px solid transparent;
+        border-image: linear-gradient(45deg, #ff6ec4, #7873f5);
+        border-image-slice: 1;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%) scale(0.5) rotateY(90deg); /* 初始縮小並旋轉 */
+        opacity: 0;
+        transition: opacity 1s ease, transform 1s ease; /* 調整動畫時間和效果 */
+        z-index: 999;
+        background: white;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+        border-radius: 16px;
+      }
+
+      #embeddedFrame.show {
+        display: block;
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) rotateY(0deg); /* 放大並恢復旋轉 */
+      }
+
+      /* 打字機效果 */
+      #typewriterText::after {
+        content: '|';
+        animation: blink 0.7s step-end infinite;
+      }
+
+      @keyframes blink {
+        50% { opacity: 0; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="bubbleCanvas"></canvas>
+
+    <iframe id="embeddedFrame" src=""></iframe>
+
+    <div id="typewriterContainer" style="display: none; position: absolute; top: 10%; left: 50%; transform: translateX(-50%); font-size: 24px; font-family: monospace; color: black;">
+      <span id="typewriterText"></span>
+    </div>
+
+    <script src="sketch.js"></script>
+    <script>
+      // 泡泡動畫
+      const canvas = document.getElementById("bubbleCanvas");
+      const ctx = canvas.getContext("2d");
+      let bubbles = [];
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      function createBubble() {
+        return {
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 20 + 10,
+          speedY: Math.random() * -2 - 1,
+          alpha: Math.random() * 0.5 + 0.5,
+        };
+      }
+
+      function updateBubbles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+          const bubble = bubbles[i];
+          ctx.beginPath();
+          ctx.arc(bubble.x, bubble.y, bubble.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(173, 216, 230, ${bubble.alpha})`;
+          ctx.fill();
+
+          bubble.y += bubble.speedY;
+          bubble.alpha -= 0.005;
+
+          if (bubble.alpha <= 0 || bubble.y + bubble.size < 0) {
+            bubbles.splice(i, 1);
+          }
+        }
+
+        while (bubbles.length < 50) {
+          bubbles.push(createBubble());
+        }
+
+        requestAnimationFrame(updateBubbles);
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+      updateBubbles();
+
+      // 打字機效果 + 顯示 iframe
+      function showIframe(link, text) {
+        const iframe = document.getElementById("embeddedFrame");
+        const typewriterContainer = document.getElementById("typewriterContainer");
+        const typewriterText = document.getElementById("typewriterText");
+
+        iframe.classList.remove("show");
+        iframe.style.opacity = "0";
+        iframe.src = ""; // 重置
+
+        typewriterContainer.style.display = "block";
+        typewriterText.textContent = "";
+
+        let index = 0;
+
+        function typeWriter() {
+          if (index < text.length) {
+            typewriterText.textContent += text.charAt(index);
+            index++;
+            setTimeout(typeWriter, 100);
+          } else {
+            // 打字完成後顯示 iframe
+            setTimeout(() => {
+              typewriterContainer.style.display = "none";
+              iframe.src = link;
+              iframe.classList.add("show");
+            }, 500);
+          }
+        }
+
+        typeWriter();
+      }
+
+      // 自動觸發打字機與載入 iframe
+      document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(() => {
+          showIframe("https://mercy94326.github.io/0413/", "正在載入測驗卷...");
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>
